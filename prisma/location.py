@@ -8,18 +8,17 @@ from google.protobuf import field_mask_pb2
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# Define the labels map to check
+# Define the labels map to check (excluding project_id)
 LABELS_MAP = {
     'app': 'gcp',
-    'id': '123',
-    'user': 'abc',
-    'project_id': 'adk-short-bot-465311'
+    'age': '123',
+    'name': 'vj-gcp'
 }
 
 # Define the list of locations to check
-LOCATIONS = ["us-central1", "us-east1", "us-west1"]  # Add more locations as needed
+LOCATIONS = ["us-central1", "us-west1"]  # Add more locations as needed
 
-def check_storage_labels():
+def check_storage_labels(project_id):
     """Check and add all required labels to Cloud Storage buckets"""
     storage_client = storage.Client()
     try:
@@ -33,6 +32,9 @@ def check_storage_labels():
                     labels[key] = value
                     modified = True
             
+            # Add project_id explicitly here
+            labels['project_id'] = project_id
+            
             if modified:
                 bucket.labels = labels
                 bucket.patch()
@@ -40,9 +42,9 @@ def check_storage_labels():
     except GoogleAPICallError as e:
         logging.error(f"[GCS] Error: {e}")
 
-def check_bigquery_labels():
+def check_bigquery_labels(project_id):
     """Check and add all required labels to BigQuery datasets"""
-    bq_client = bigquery.Client(project=LABELS_MAP['project_id'])
+    bq_client = bigquery.Client(project=project_id)
     try:
         datasets = list(bq_client.list_datasets())
         for dataset_ref in datasets:
@@ -55,6 +57,9 @@ def check_bigquery_labels():
                     labels[key] = value
                     modified = True
             
+            # Add project_id explicitly here
+            labels['project_id'] = project_id
+            
             if modified:
                 dataset.labels = labels
                 bq_client.update_dataset(dataset, ["labels"])
@@ -62,12 +67,12 @@ def check_bigquery_labels():
     except GoogleAPICallError as e:
         logging.error(f"[BigQuery] Error: {e}")
 
-def check_artifact_labels():
+def check_artifact_labels(project_id):
     """Check and add all required labels to Artifact Registry repositories"""
     artifact_client = artifactregistry_v1.ArtifactRegistryClient()
     try:
         for location in LOCATIONS:
-            parent = f"projects/{LABELS_MAP['project_id']}/locations/{location}"
+            parent = f"projects/{project_id}/locations/{location}"
             repos = artifact_client.list_repositories(parent=parent)
             for repo in repos:
                 labels = repo.labels or {}
@@ -77,6 +82,9 @@ def check_artifact_labels():
                     if labels.get(key) != value:
                         labels[key] = value
                         modified = True
+                
+                # Add project_id explicitly here
+                labels['project_id'] = project_id
                 
                 if modified:
                     repo.labels = labels
@@ -88,12 +96,12 @@ def check_artifact_labels():
     except GoogleAPICallError as e:
         logging.error(f"[Artifact] Error: {e}")
 
-def check_dataproc_metastore_labels():
+def check_dataproc_metastore_labels(project_id):
     """Check and add all required labels to Dataproc Metastore services"""
     client = metastore_v1.DataprocMetastoreClient()
     try:
         for location in LOCATIONS:
-            parent = f"projects/{LABELS_MAP['project_id']}/locations/{location}"
+            parent = f"projects/{project_id}/locations/{location}"
             services = client.list_services(parent=parent)
             for service in services:
                 labels = service.labels or {}
@@ -104,6 +112,9 @@ def check_dataproc_metastore_labels():
                         labels[key] = value
                         modified = True
                 
+                # Add project_id explicitly here
+                labels['project_id'] = project_id
+                
                 if modified:
                     service.labels = labels
                     update_mask = field_mask_pb2.FieldMask(paths=["labels"])
@@ -112,11 +123,11 @@ def check_dataproc_metastore_labels():
     except GoogleAPICallError as e:
         logging.error(f"[Metastore] Error: {e}")
 
-def check_pubsub_labels():
+def check_pubsub_labels(project_id):
     """Check and add all required labels to Pub/Sub subscriptions"""
     subscriber = pubsub_v1.SubscriberClient()
     try:
-        project_path = f"projects/{LABELS_MAP['project_id']}"
+        project_path = f"projects/{project_id}"
         subs = subscriber.list_subscriptions(request={"project": project_path})
         for sub in subs:
             labels = sub.labels or {}
@@ -126,6 +137,9 @@ def check_pubsub_labels():
                 if labels.get(key) != value:
                     labels[key] = value
                     modified = True
+            
+            # Add project_id explicitly here
+            labels['project_id'] = project_id
             
             if modified:
                 sub.labels = labels
@@ -139,19 +153,22 @@ def check_pubsub_labels():
         logging.error(f"[PubSub] Error: {e}")
 
 if __name__ == "__main__":
+    # Hardcode the project_id
+    project_id = 'adk-short-bot-465311'
+    
     logging.info("\n=== Processing Cloud Storage ===")
-    check_storage_labels()
+    check_storage_labels(project_id)
     
     logging.info("\n=== Processing BigQuery ===")
-    check_bigquery_labels()
+    check_bigquery_labels(project_id)
     
     logging.info("\n=== Processing Artifact Registry ===")
-    check_artifact_labels()
+    check_artifact_labels(project_id)
     
     logging.info("\n=== Processing Dataproc Metastore ===")
-    check_dataproc_metastore_labels()
+    check_dataproc_metastore_labels(project_id)
     
     logging.info("\n=== Processing Pub/Sub ===")
-    check_pubsub_labels()
+    check_pubsub_labels(project_id)
     
     logging.info("\nLabel check complete for all services!")
