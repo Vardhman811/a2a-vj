@@ -17,8 +17,8 @@ LABELS_MAP = {
 LOCATIONS = ["us-central1", "us-east1"]
 
 
-def check_storage_labels(project_id):
-    print("\n=== Buckets ===")
+def check_storage_labels(project_id, file):
+    file.write("\n=== Buckets ===\n")
     try:
         client = storage.Client(project=project_id)
         buckets = list(client.list_buckets(project=project_id))
@@ -28,15 +28,15 @@ def check_storage_labels(project_id):
             missing = [k for k, v in LABELS_MAP.items() if labels.get(k) != v]
             if missing:
                 found = True
-                print(f"{bucket.name} - Missing labels: {missing}")
+                file.write(f"{bucket.name} - Missing labels: {missing}\n")
         if not found:
-            print("All buckets have required labels.")
+            file.write("All buckets have required labels.\n")
     except GoogleAPICallError as e:
-        print(f"[Error] GCS - {e}")
+        file.write(f"[Error] GCS - {e}\n")
 
 
-def check_bigquery_labels(project_id):
-    print("\n=== BigQuery Datasets ===")
+def check_bigquery_labels(project_id, file):
+    file.write("\n=== BigQuery Datasets ===\n")
     try:
         client = bigquery.Client(project=project_id)
         datasets = list(client.list_datasets())
@@ -47,15 +47,15 @@ def check_bigquery_labels(project_id):
             missing = [k for k, v in LABELS_MAP.items() if labels.get(k) != v]
             if missing:
                 found = True
-                print(f"{dataset.dataset_id} - Missing labels: {missing}")
+                file.write(f"{dataset.dataset_id} - Missing labels: {missing}\n")
         if not found:
-            print("All datasets have required labels.")
+            file.write("All datasets have required labels.\n")
     except GoogleAPICallError as e:
-        print(f"[Error] BigQuery - {e}")
+        file.write(f"[Error] BigQuery - {e}\n")
 
 
-def check_artifact_labels(project_id):
-    print("\n=== Artifact Registry Repos ===")
+def check_artifact_labels(project_id, file):
+    file.write("\n=== Artifact Registry Repos ===\n")
     client = artifactregistry_v1.ArtifactRegistryClient()
     try:
         found = False
@@ -68,15 +68,15 @@ def check_artifact_labels(project_id):
                 if missing:
                     found = True
                     name = repo.name.split("/")[-1]
-                    print(f"{name} - Missing labels: {missing}")
+                    file.write(f"{name} - Missing labels: {missing}\n")
         if not found:
-            print("All repos have required labels.")
+            file.write("All repos have required labels.\n")
     except GoogleAPICallError as e:
-        print(f"[Error] Artifact - {e}")
+        file.write(f"[Error] Artifact - {e}\n")
 
 
-def check_dataproc_metastore_labels(project_id):
-    print("\n=== Dataproc Metastore Services ===")
+def check_dataproc_metastore_labels(project_id, file):
+    file.write("\n=== Dataproc Metastore Services ===\n")
     client = metastore_v1.DataprocMetastoreClient()
     try:
         found = False
@@ -89,15 +89,15 @@ def check_dataproc_metastore_labels(project_id):
                 if missing:
                     found = True
                     name = service.name.split("/")[-1]
-                    print(f"{name} - Missing labels: {missing}")
+                    file.write(f"{name} - Missing labels: {missing}\n")
         if not found:
-            print("All metastore services have required labels.")
+            file.write("All metastore services have required labels.\n")
     except GoogleAPICallError as e:
-        print(f"[Error] Metastore - {e}")
+        file.write(f"[Error] Metastore - {e}\n")
 
 
-def check_pubsub_labels(project_id):
-    print("\n=== Pub/Sub Subscriptions ===")
+def check_pubsub_labels(project_id, file):
+    file.write("\n=== Pub/Sub Subscriptions ===\n")
     client = pubsub_v1.SubscriberClient()
     try:
         project_path = f"projects/{project_id}"
@@ -109,11 +109,11 @@ def check_pubsub_labels(project_id):
             if missing:
                 found = True
                 name = sub.name.split("/")[-1]
-                print(f"{name} - Missing labels: {missing}")
+                file.write(f"{name} - Missing labels: {missing}\n")
         if not found:
-            print("All subscriptions have required labels.")
+            file.write("All subscriptions have required labels.\n")
     except GoogleAPICallError as e:
-        print(f"[Error] Pub/Sub - {e}")
+        file.write(f"[Error] Pub/Sub - {e}\n")
 
 
 if __name__ == "__main__":
@@ -123,15 +123,19 @@ if __name__ == "__main__":
         'apps-aa218',
     ]
 
-    for project_id in PROJECT_IDS:
-        print("\n" + "=" * 60)
-        print(f"🔍 Checking project: {project_id}")
-        print("=" * 60)
+    # ✅ Output file path
+    OUTPUT_FILE = "label_check_output.txt"
 
-        check_storage_labels(project_id)
-        check_bigquery_labels(project_id)
-        check_artifact_labels(project_id)
-        check_dataproc_metastore_labels(project_id)
-        check_pubsub_labels(project_id)
+    with open(OUTPUT_FILE, "w") as file:
+        for project_id in PROJECT_IDS:
+            file.write("\n" + "=" * 60 + "\n")
+            file.write(f"🔍 Checking project: {project_id}\n")
+            file.write("=" * 60 + "\n")
 
-        print("\n✅ Completed check for:", project_id)
+            check_storage_labels(project_id, file)
+            check_bigquery_labels(project_id, file)
+            check_artifact_labels(project_id, file)
+            check_dataproc_metastore_labels(project_id, file)
+            check_pubsub_labels(project_id, file)
+
+            file.write(f"\n✅ Completed check for: {project_id}\n")
