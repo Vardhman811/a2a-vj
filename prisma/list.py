@@ -6,14 +6,14 @@ from google.api_core.exceptions import GoogleAPICallError
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# Required labels
+# Required labels to check
 LABELS_MAP = {
-    'apple': 'fruit',
-    'mango': '123',
-    'potato': 'vegetable'
+    'one': 'fruit',
+    'yes': '123',
+    'no': 'vegetable'
 }
 
-# Locations for Artifact Registry & Metastore
+# Locations for Artifact Registry and Dataproc Metastore
 LOCATIONS = ["us-central1", "us-east1"]
 
 
@@ -72,7 +72,7 @@ def check_artifact_labels(project_id, file):
         if not found:
             file.write("All repos have required labels.\n")
     except GoogleAPICallError as e:
-        file.write(f"[Error] Artifact - {e}\n")
+        file.write(f"[Error] Artifact Registry - {e}\n")
 
 
 def check_dataproc_metastore_labels(project_id, file):
@@ -117,7 +117,7 @@ def check_pubsub_labels(project_id, file):
 
 
 if __name__ == "__main__":
-    # ✅ List of projects to scan
+    # ✅ List of GCP projects to scan
     PROJECT_IDS = [
         'adk-short-bot-465311',
         'apps-aa218',
@@ -126,10 +126,11 @@ if __name__ == "__main__":
     # ✅ Output file path
     OUTPUT_FILE = "label_check_output.txt"
 
-    with open(OUTPUT_FILE, "w") as file:
+    # ✅ Write output to UTF-8 encoded file
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
         for project_id in PROJECT_IDS:
             file.write("\n" + "=" * 60 + "\n")
-            file.write(f"🔍 Checking project: {project_id}\n")
+            file.write(f"Checking project: {project_id}\n")
             file.write("=" * 60 + "\n")
 
             check_storage_labels(project_id, file)
@@ -138,4 +139,4 @@ if __name__ == "__main__":
             check_dataproc_metastore_labels(project_id, file)
             check_pubsub_labels(project_id, file)
 
-            file.write(f"\n✅ Completed check for: {project_id}\n")
+            file.write(f"\nCompleted check for: {project_id}\n")
